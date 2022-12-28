@@ -35,6 +35,10 @@ By default installations are started without a product key and will default to e
 7.  Create a new Linode using this Stackscript.  Total install time varies, but is typically 15-30 minutes.  Your winode will reboot several times as part of the install process.
 8.  Currently the temporary 30GB block storage volume used by the installer is not automatically deleted.  You can safetly delete this following your instatllation.  Volumes are labeled as "temp-<linodeID>".
 
+# Instance Requirements
+- Windows Server instances will run on a Nanode with 1GB of RAM (512MB is Microsoft minimum), but performance is very poor.
+- Windows 11 officially requires at least 4GB of RAM.
+
 # Screenshots
 
 ![Screenshot](winode-lish.png)
