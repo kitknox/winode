@@ -3,7 +3,7 @@ Automated BYO License Windows Install on Linode
 
 *Warning: This is an unofficial capability that is not officially supported by Linode or Akamai Technologies.  Use at your own risk*
 
-**Please do NOT contact Linode support with questions about Windows as it is out of their scope of support at this time.  Feel free to open an issue here.**
+**Please do NOT contact Linode support with questions about Windows as it is out of their scope of support at this time.  Feel free to open an issue here, but there is no guarantee of support.**
 
 # Features
 
