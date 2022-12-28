@@ -33,6 +33,7 @@ By default installations are started without a product key and will default to e
 5.  If installing Windows 11 you must provide your own valid ISO download URL.  You may get a new URL by going to (https://www.microsoft.com/en-us/software-download/windows11).  Note that URLs are valid for 24 hours and then must be updated again.  Alternatively you may download your own copy and self-host it for future installs.  Please URL in W11_ISO_URL.
 6.  Create a new Linode Stackscript with the full contents of this modified install-windows.sh file.  When creating your Stackscript ensure you select "Ubuntu 22.04 LTS" as the distribution.
 7.  Create a new Linode using this Stackscript.
+8.  Currently the temporary 30GB block storage volume used by the installer is not automatically deleted.  You can safetly delete this following your instatllation.  Volumes are labeled as "temp-<linodeID>".
 
 # Screenshots
 
