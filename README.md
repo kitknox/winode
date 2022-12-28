@@ -40,3 +40,5 @@ By default installations are started without a product key and will default to e
 ![Screenshot](winode-lish.png)
 
 ![Screenshot](winode-vlan.png)
+
+![Screenshot](winode-win11.png)
