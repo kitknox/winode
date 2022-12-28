@@ -26,8 +26,8 @@ By default installations are started without a product key and will default to e
 
 # Getting Started
 
-1.  Copy/paste or otherwise insert install-windows.sh into a new StackScript that you create with an Ubuntu 22.04 image target.  If installing Windows 11 you must provide your own valid ISO download URL.  You may get a new URL by going to (https://www.microsoft.com/en-us/software-download/windows11).  Note that URLs are valid for 24 hours and then must be updated again.  Alternatively you may download your own copy and self-host it for future installs.  
-2.  Create a new Linode using this Stackscript. If using Cloud Manager, fill in the UDF variables including a valid Linode API token.  If using the API to create your instance insert UDF variables with your API call. Total install time varies, but is typically 15-30 minutes.  Your winode will reboot several times as part of the install process.
+1.  Copy/paste or otherwise insert install-windows.sh into a new StackScript that you create with an Ubuntu 22.04 image target.  
+2.  Create a new Linode using this Stackscript. If using Cloud Manager, fill in the UDF variables including a valid Linode API token.  If using the API to create your instance insert UDF variables with your API call. Total install time varies, but is typically 15-30 minutes.  Your winode will reboot several times as part of the install process.  If installing Windows 11 you must provide your own valid ISO download URL.  You may get a new URL by going to (https://www.microsoft.com/en-us/software-download/windows11).  Note that URLs are valid for 24 hours and then must be updated again.  Alternatively you may download your own copy and self-host it for future installs should you have a right to do so.
 3.  Currently the temporary 30GB block storage volume used by the installer is not automatically deleted.  You can safetly delete this following your instatllation.  Volumes are labeled as "temp-<linodeID>".
 
 # Instance Requirements
