@@ -27,10 +27,10 @@ STAGE=1
 # Persist UDF variables for future stages after reboot
 if [ $STAGE == 1 ]; then
   sed -i "s/^#TOKEN=/TOKEN=$TOKEN/" /root/StackScript
-  sed -i "s/^#WINDOWS_PASSWORD=/WINDOWS_PASSWORD=$WINDOWS_PASSWORD/" /root/StackScript
+  sed -i "s/^#WINDOWS_PASSWORD=/WINDOWS_PASSWORD=\"$(echo $WINDOWS_PASSWORD | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')\"/" /root/StackScript
   sed -i "s/^#INSTALL_WINDOWS_VERSION=/INSTALL_WINDOWS_VERSION=$INSTALL_WINDOWS_VERSION/" /root/StackScript
   sed -i "s/^#AUTOLOGIN=/AUTOLOGIN=$AUTOLOGIN/" /root/StackScript
-  sed -i "s/^#W11_ISO_URL=/W11_ISO_URL=$W11_ISO_URL/" /root/StackScript
+  sed -i "s/^#W11_ISO_URL=/W11_ISO_URL=\"$(echo $W11_ISO_URL | sed -e 's/\\/\\\\/g; s/\//\\\//g; s/&/\\\&/g')\"/" /root/StackScript
 fi
 
 stage1() {
