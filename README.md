@@ -1,5 +1,5 @@
 # winode
-Automated BYO License Windows Install on Linode
+Automated BYO License Windows Install on Linode - Launchable from Stackscripts
 
 *Warning: This is an unofficial capability that is not officially supported by Linode or Akamai Technologies.  Use at your own risk*
 
