@@ -8,26 +8,30 @@
 # - Deploys ISO as Bootable USB on recovery partition on main raw disk
 # - Deploys autounattend.xml to fully automate installation of Windows and enabling of Remote Desktop
 #
+#<UDF name="TOKEN" Label="Linode API Token" />
+#<UDF name="WINDOWS_PASSWORD" Label="Administrator Password for Windows" example="Password" />
+#<UDF name="INSTALL_WINDOWS_VERSION" Label="Windows Version" oneOf="w11,2k22" default="2k22"/>
+#<UDF name="AUTOLOGIN" Label="Auto Login to Windows" oneOf="true,false" default="true"/>
+#<UDF name="W11_ISO_URL" Label="Windows 11 ISO URL (Not Required For Windows Server) - Get Fresh URL From https://www.microsoft.com/en-us/software-download/windows11" default="NOURL"/>
 
-## User Configuration
-
-TOKEN=INSERT_API_TOKEN_HERE
-WINDOWS_PASSWORD="INSERT_PASSWORD_HERE"
-# Auto login option applies to Windows Server Build -- enable for CTRL ALTR DEL workaround
-AUTOLOGIN="true"
-
-# Windows Version Selection -- Note: Windows 11 download URLs from Microsoft are only valid for 24 hours and then must be updated, Windows Server URLs are currently persistent
-# You might want to self host your own mirror if you are doing more than one Windows 11 install and then use that URL.
-# "w11" - Windows 11 Pro
-# "2k22" - Windows Server 2022 Datacenter Edition
-INSTALL_WINDOWS_VERSION="2k22"
-
-W11_ISO_URL='https://software.download.prss.microsoft.com/dbazure/Win11_22H2_English_x64v1.iso?t=7cf6be86-5c78-498b-b1bf-29d71548c08a&e=1672322009&h=f0c66a2fce6e60603b6095d2e7643331d520776477c142ef4d9c29877f193088'
+# Replaced with values from StackScript UDF
+#TOKEN=
+#WINDOWS_PASSWORD=
+#INSTALL_WINDOWS_VERSION=
+#AUTOLOGIN=
+#W11_ISO_URL=
 W2K22_ISO_URL='https://go.microsoft.com/fwlink/p/?LinkID=2195280&clcid=0x409&culture=en-us&country=US'
 
-## End User Configuration
-
+# STAGE changes dynamically as install progresses
 STAGE=1
+# Persist UDF variables for future stages after reboot
+if [ $STAGE == 1 ]; then
+  sed -i "s/^#TOKEN=/TOKEN=$TOKEN/" /root/StackScript
+  sed -i "s/^#WINDOWS_PASSWORD=/WINDOWS_PASSWORD=$WINDOWS_PASSWORD/" /root/StackScript
+  sed -i "s/^#INSTALL_WINDOWS_VERSION=/INSTALL_WINDOWS_VERSION=$INSTALL_WINDOWS_VERSION/" /root/StackScript
+  sed -i "s/^#AUTOLOGIN=/AUTOLOGIN=$AUTOLOGIN/" /root/StackScript
+  sed -i "s/^#W11_ISO_URL=/W11_ISO_URL=$W11_ISO_URL/" /root/StackScript
+fi
 
 stage1() {
   echo "Stage 1 started"
