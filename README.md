@@ -26,14 +26,9 @@ By default installations are started without a product key and will default to e
 
 # Getting Started
 
-1.  Download install-windows.sh locally.
-2.  Modify install-windows.sh to include a valid Linode API token.  For security reasons it is best to create an API key that is short lived, but this is not technically required.  Insert API token into TOKEN.
-3.  Generate a secure new Administrator password and insert into configuration file.
-4.  Select Windows version and apply to INSTALL_WINDOWS_VERSION.
-5.  If installing Windows 11 you must provide your own valid ISO download URL.  You may get a new URL by going to (https://www.microsoft.com/en-us/software-download/windows11).  Note that URLs are valid for 24 hours and then must be updated again.  Alternatively you may download your own copy and self-host it for future installs.  Please URL in W11_ISO_URL.
-6.  Create a new Linode Stackscript with the full contents of this modified install-windows.sh file.  When creating your Stackscript ensure you select "Ubuntu 22.04 LTS" as the target image.
-7.  Create a new Linode using this Stackscript.  Total install time varies, but is typically 15-30 minutes.  Your winode will reboot several times as part of the install process.
-8.  Currently the temporary 30GB block storage volume used by the installer is not automatically deleted.  You can safetly delete this following your instatllation.  Volumes are labeled as "temp-<linodeID>".
+1.  Copy/paste or otherwise insert install-windows.sh into a new StackScript that you create with an Ubuntu 22.04 image target.  If installing Windows 11 you must provide your own valid ISO download URL.  You may get a new URL by going to (https://www.microsoft.com/en-us/software-download/windows11).  Note that URLs are valid for 24 hours and then must be updated again.  Alternatively you may download your own copy and self-host it for future installs.  
+2.  Create a new Linode using this Stackscript. If using Cloud Manager, fill in the UDF variables including a valid Linode API token.  If using the API to create your instance insert UDF variables with your API call. Total install time varies, but is typically 15-30 minutes.  Your winode will reboot several times as part of the install process.
+3.  Currently the temporary 30GB block storage volume used by the installer is not automatically deleted.  You can safetly delete this following your instatllation.  Volumes are labeled as "temp-<linodeID>".
 
 # Instance Requirements
 - Windows Server instances will run on a Nanode with 1GB of RAM (512MB is Microsoft minimum), but performance is very poor.
