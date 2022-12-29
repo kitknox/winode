@@ -8,7 +8,7 @@ Automated BYO License Windows Install on Linode - Launchable from Stackscripts
 # Features
 
 1. Fully automated installation from upstream Microsoft ISO images for both Windows Server 2022 and Windows 11.  No need to create an initial install on a local server and upload it to Linode.
-2. Automation slipstream of all latest VirtIO drivers resulting in full support for Linode local disks (SCSI), network including VLAN and private IPs, and block storage volumes.
+2. Automated slipstream of all latest VirtIO drivers resulting in full support for Linode local disks (SCSI), network including VLAN and private IPs, and block storage volumes.
 3.  Automatic enablement of Emergency Management Services (EMS) to the Linode a LISH allowing for recovery via Cloud Manager and SSH.  LISH access then allows for easy access for troubleshotting and quickly changing an instances IP address.
 4.  Automatic enablement of Remote Desktop (RDP) over TCP/3389.  Use Linode Cloud Firewall rules to restrict access!
 
