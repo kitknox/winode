@@ -506,7 +506,7 @@ cat > /root/autounattend.xml<<EOF
                     <InstallFrom>
                         <MetaData wcm:action="add">
                             <Key>/IMAGE/NAME</Key>
-                            <Value>Windows 11 Pro</Value>
+                            <Value>Windows 10 Pro</Value>
                         </MetaData>
                     </InstallFrom>
                     <InstallTo>
@@ -533,7 +533,7 @@ cat > /root/autounattend.xml<<EOF
                 </Password>
                 <LogonCount>3</LogonCount>
                 <Username>Administrator</Username>
-                <Enabled>true</Enabled>
+                <Enabled>$AUTOLOGIN</Enabled>
             </AutoLogon>
             <UserAccounts>
                 <AdministratorPassword>
@@ -601,7 +601,7 @@ EOF
 }
 
 if [ $INSTALL_WINDOWS_VERSION == "2k22" ]; then
-  echo "Installing Windwos Server"
+  echo "Installing Windows Server"
 fi
 
 if [ $INSTALL_WINDOWS_VERSION == "w11" ]; then
