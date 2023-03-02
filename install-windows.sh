@@ -533,7 +533,7 @@ cat > /root/autounattend.xml<<EOF
                 </Password>
                 <LogonCount>3</LogonCount>
                 <Username>Administrator</Username>
-                <Enabled>true</Enabled>
+                <Enabled>$AUTOLOGIN</Enabled>
             </AutoLogon>
             <UserAccounts>
                 <AdministratorPassword>
