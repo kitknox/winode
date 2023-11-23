@@ -259,21 +259,21 @@ stage3() {
     wget -O woeusb.sh https://github.com/WoeUSB/WoeUSB/releases/download/v5.2.4/woeusb-5.2.4.bash
     chmod +x woeusb.sh
   fi
-  if ! [ -f windows.iso ]; then
+  if ! [ -f windows-amd64.iso ]; then
     if [ $INSTALL_WINDOWS_VERSION == "2k22" ]; then
-      wget -q -O windows.iso $W2K22_ISO_URL
+      wget -q -O windows-amd64.iso $W2K22_ISO_URL
     fi
     if [ $INSTALL_WINDOWS_VERSION == "w11" ]; then
-      wget -q -O windows.iso $W11_ISO_URL
+      wget -q -O windows-amd64.iso $W11_ISO_URL
     fi
   fi
-  if ! [ -f windows.iso ]; then
+  if ! [ -f windows-amd64.iso ]; then
     echo "Error: No valid ISO found."
     exit
   fi
 
   if ! [ -f windows_virtio.iso ]; then
-    distrobuilder repack-windows windows.iso windows_virtio.iso --windows-version=$INSTALL_WINDOWS_VERSION
+    distrobuilder repack-windows windows-amd64.iso windows_virtio.iso --windows-version=$INSTALL_WINDOWS_VERSION
   fi
   if ! [ -f windows_virtio.iso ]; then
     echo "Error: No valid VirtIO ISO found."
