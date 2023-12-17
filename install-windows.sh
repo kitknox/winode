@@ -67,7 +67,7 @@ stage1() {
   if ! lsblk -f "/dev/disk/by-id/scsi-0Linode_Volume_temp-$LINODE_ID" | grep ext4 > /dev/null; then
     echo "No filesystem found, creating."
     mkfs.ext4 -U $ROOT_UUID "/dev/disk/by-id/scsi-0Linode_Volume_temp-$LINODE_ID"
-  fi  
+  fi
   mkdir "/mnt/temp-$LINODE_ID"
   mount  "/dev/disk/by-id/scsi-0Linode_Volume_temp-$LINODE_ID" /mnt/temp-$LINODE_ID
   VOLUME_ID=`curl -sH "Authorization: Bearer $TOKEN"     https://api.linode.com/v4/volumes | jq ".data[] | select (.label == \"temp-$LINODE_ID\") | .id"`
@@ -110,7 +110,7 @@ stage1() {
   cp $0 /mnt/temp-$LINODE_ID/etc/rc.local
   chmod +x /mnt/temp-$LINODE_ID/rc.local
   sed -i "s/STAGE=1/STAGE=2/" /mnt/temp-$LINODE_ID/etc/rc.local
-  
+
   # Reboot
   curl -sH "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
@@ -281,7 +281,11 @@ stage3() {
   fi
 
   if ! [ -a /dev/sdb1 ]; then
-    fdisk /dev/sdb < /root/fdisk.txt
+# Create two Win95 FAT32 (LBA) partitions. 1=7GB, 2=<remainder of volume size>
+cat <<EOF | sfdisk /dev/sdb
+,7G,c
+,,c
+EOF
   fi
   mkfs.fat /dev/sdb1
   ./woeusb.sh --partition windows_virtio.iso /dev/sdb1
@@ -295,29 +299,7 @@ stage3() {
       https://api.linode.com/v4/linode/instances/$LINODE_ID/reboot | jq
 }
 
-createfdisk() {
-cat > /root/fdisk.txt<<EOF
-n
-p
-1
-8192
-+6G
-n
-p
-2
-12591104
 
-t
-1
-c
-t
-2
-c
-a
-1
-w
-EOF
-}
 createunattend() {
   if [ $INSTALL_WINDOWS_VERSION == "2k22" ]; then
 cat > /root/autounattend.xml<<EOF
@@ -609,7 +591,6 @@ if [ $INSTALL_WINDOWS_VERSION == "w11" ]; then
 fi
 
 if [ $STAGE == 1 ]; then
-  createfdisk
   createunattend
   stage1
 fi
@@ -620,3 +601,4 @@ if [ $STAGE == 3 ]; then
   createunattend
   stage3
 fi
+
