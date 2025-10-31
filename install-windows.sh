@@ -108,7 +108,7 @@ stage1() {
   cp fstab.new /mnt/temp-$LINODE_ID/etc/fstab
   rm fstab.new
   cp $0 /mnt/temp-$LINODE_ID/etc/rc.local
-  chmod +x /mnt/temp-$LINODE_ID/rc.local
+  chmod +x /mnt/temp-$LINODE_ID/etc/rc.local
   sed -i "s/STAGE=1/STAGE=2/" /mnt/temp-$LINODE_ID/etc/rc.local
 
   # Reboot
