@@ -285,7 +285,7 @@ stage3() {
     echo "Installing required packages..."
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -yq wimtools genisoimage libwin-hivex-perl ntfs-3g kexec-tools cpio
+    apt-get install -yq wimtools genisoimage libwin-hivex-perl ntfs-3g kexec-tools cpio libarchive-tools
   fi
 
   RAW_DISK_ID=`curl -sH "Authorization: Bearer $TOKEN" \
@@ -334,58 +334,130 @@ stage3() {
     wget -O woeusb.sh https://github.com/WoeUSB/WoeUSB/releases/download/v5.2.4/woeusb-5.2.4.bash
     chmod +x woeusb.sh
   fi
-  if ! [ -f windows-amd64.iso ]; then
-    if [ $INSTALL_WINDOWS_VERSION == "2k22" ]; then
-      wget -q -O windows-amd64.iso $W2K22_ISO_URL
-    fi
-    if [ $INSTALL_WINDOWS_VERSION == "w11" ]; then
-      wget -q -O windows-amd64.iso $W11_ISO_URL
+  # ===== diagnostic hardening: prevent silent empty-media builds =====
+  # Halt (do NOT reboot) on any media-build failure so the build env + logs survive for SSH inspection.
+  fail_halt() {
+    echo "############ BUILD VALIDATION FAILED: $1 ############"
+    echo "Halting (no reboot) so build env survives. SSH: root@$(hostname -I 2>/dev/null | awk '{print $1}')"
+    echo "Logs: /root/distrobuilder.log /root/woeusb.log"; df -h 2>&1
+    touch /root/BUILD_FAILED
+    exit 1
+  }
+
+  # ===== Heavy repack runs on the 160GB raw target disk (sdb), NOT the 30GB build root =====
+  # Root cause of the empty-media bug (confirmed): the ~30GB build root cannot hold
+  # source(8GB) + distrobuilder overlay + output(8GB) for the English ISO, so ISO generation hit
+  # ENOSPC (exit 28) and left a truncated windows_virtio.iso that WoeUSB could not extract
+  # -> empty media partition -> "Booting from Hard Disk..." hang. sdb is the eventual Windows
+  # target but is unused until the partitioning step below, so borrow it as scratch first.
+  WORK=/mnt/work
+  if ! mountpoint -q "$WORK" 2>/dev/null; then
+    mkdir -p "$WORK"
+    umount /dev/sdb1 2>/dev/null; umount /dev/sdb 2>/dev/null
+    wipefs -a /dev/sdb >/dev/null 2>&1 || true
+    mkfs.ext4 -F -q /dev/sdb
+    mount /dev/sdb "$WORK"
+  fi
+  echo "Scratch on sdb (160GB):"; df -h "$WORK"
+
+  # Stage source ISO onto the big scratch disk (move it off the small root if already downloaded there)
+  if [ ! -f "$WORK/windows-amd64.iso" ]; then
+    if [ -f windows-amd64.iso ]; then mv windows-amd64.iso "$WORK/windows-amd64.iso"
+    elif [ "$INSTALL_WINDOWS_VERSION" == "2k22" ]; then wget -q -O "$WORK/windows-amd64.iso" "$W2K22_ISO_URL"
+    elif [ "$INSTALL_WINDOWS_VERSION" == "w11" ]; then wget -q -O "$WORK/windows-amd64.iso" "$W11_ISO_URL"
     fi
   fi
-  if ! [ -f windows-amd64.iso ]; then
-    echo "Error: No valid ISO found."
-    exit
+  [ -f "$WORK/windows-amd64.iso" ] || fail_halt "no source ISO staged on scratch"
+
+  if [ ! -f "$WORK/windows_virtio.iso" ]; then
+    echo "Running distrobuilder repack-windows (cache-dir + source + output + TMPDIR all on 160GB sdb scratch)..."
+    mkdir -p "$WORK/dbcache" "$WORK/tmp"
+    export TMPDIR="$WORK/tmp"   # keep any tool honoring TMPDIR off the small 30GB root
+    distrobuilder repack-windows "$WORK/windows-amd64.iso" "$WORK/windows_virtio.iso" \
+      --windows-version=$INSTALL_WINDOWS_VERSION --cache-dir="$WORK/dbcache" > /root/distrobuilder.log 2>&1
+    DB_RC=$?
+    echo "distrobuilder exit code: $DB_RC" | tee -a /root/distrobuilder.log
   fi
 
-  if ! [ -f windows_virtio.iso ]; then
-    distrobuilder repack-windows windows-amd64.iso windows_virtio.iso --windows-version=$INSTALL_WINDOWS_VERSION
+  # --- Validate distrobuilder output BEFORE destroying anything (root cause of the empty-media bug) ---
+  [ -f "$WORK/windows_virtio.iso" ] || fail_halt "distrobuilder produced no windows_virtio.iso"
+  VIRTIO_BYTES=$(stat -c%s "$WORK/windows_virtio.iso" 2>/dev/null || echo 0)
+  SRC_BYTES=$(stat -c%s "$WORK/windows-amd64.iso" 2>/dev/null || echo 0)
+  echo "ISO sizes: source=$SRC_BYTES virtio=$VIRTIO_BYTES"
+  if [ "$VIRTIO_BYTES" -lt 3221225472 ] || [ "$VIRTIO_BYTES" -lt $((SRC_BYTES * 80 / 100)) ]; then
+    fail_halt "windows_virtio.iso too small ($VIRTIO_BYTES vs source $SRC_BYTES) - likely truncated repack (ENOSPC?)"
   fi
-  if ! [ -f windows_virtio.iso ]; then
-    echo "Error: No valid VirtIO ISO found."
-    exit
-  fi
+  if command -v bsdtar >/dev/null 2>&1; then VLIST=$(bsdtar -tf "$WORK/windows_virtio.iso" 2>/dev/null)
+  else VLIST=$(isoinfo -f -i "$WORK/windows_virtio.iso" 2>/dev/null); fi
+  echo "$VLIST" | grep -qiE 'sources/install\.(wim|esd)' || fail_halt "windows_virtio.iso missing sources/install.wim"
+  echo "$VLIST" | grep -qiE '(^|/)bootmgr(\.|;|$)'        || fail_halt "windows_virtio.iso missing bootmgr"
+  echo "windows_virtio.iso validated OK ($VIRTIO_BYTES bytes)"
+
+  # Move the validated ISO OFF sdb to the build root (30GB root has ~15GB free without swap/source), then release sdb.
+  echo "Staging validated ISO to build root and releasing sdb for partitioning..."
+  cp "$WORK/windows_virtio.iso" /windows_virtio.iso || fail_halt "cp of windows_virtio.iso to build root failed"
+  sync
+  ROOT_BYTES=$(stat -c%s /windows_virtio.iso 2>/dev/null || echo 0)
+  [ "$ROOT_BYTES" -eq "$VIRTIO_BYTES" ] || fail_halt "staged ISO size mismatch ($ROOT_BYTES vs $VIRTIO_BYTES) - truncated cp (root ENOSPC?)"
+  cd /
+  export TMPDIR=/tmp
+  # Recursively release sdb (distrobuilder may leave loop/overlay mounts under $WORK); HARD-GATE before parted.
+  umount -R "$WORK" 2>/dev/null || { fuser -km "$WORK" 2>/dev/null; sleep 3; umount -R "$WORK" 2>/dev/null; }
+  sleep 1
+  mountpoint -q "$WORK" && fail_halt "sdb scratch still mounted at $WORK - cannot repartition"
+  grep -q '^/dev/sdb' /proc/mounts && fail_halt "sdb still busy (mounted) - cannot repartition"
 
   # Create manual partition layout to support >4GB files and provide empty installation target
   # Partition 1: 8GB NTFS (bootable, contains installation media)
   # Partition 2: Remaining space NTFS (empty, Windows installation target)
   echo "Creating MBR partition table on /dev/sdb..."
-  parted -s /dev/sdb mklabel msdos
+  parted -s /dev/sdb mklabel msdos || fail_halt "parted mklabel failed"
 
-  echo "Creating partition 1 (8GB NTFS for installation media)..."
-  parted -s /dev/sdb mkpart primary ntfs 1MiB 8GiB
-  parted -s /dev/sdb set 1 boot on
+  echo "Creating partition 1 (12GB NTFS for installation media - English repacked ISO is ~8.5GB)..."
+  parted -s /dev/sdb mkpart primary ntfs 1MiB 12GiB || fail_halt "parted mkpart1 failed"
+  parted -s /dev/sdb set 1 boot on || fail_halt "parted set boot flag failed"
 
   echo "Creating partition 2 (remaining space for Windows installation)..."
-  parted -s /dev/sdb mkpart primary ntfs 8GiB 100%
+  parted -s /dev/sdb mkpart primary ntfs 12GiB 100% || fail_halt "parted mkpart2 failed"
+
+  # Settle the new partition table BEFORE formatting (mkfs must not race udev device-node creation)
+  partprobe /dev/sdb; udevadm settle 2>/dev/null; sleep 2
+  [ -b /dev/sdb1 ] || fail_halt "/dev/sdb1 did not appear after partprobe"
+  [ -b /dev/sdb2 ] || fail_halt "/dev/sdb2 did not appear after partprobe"
 
   # Format both partitions as NTFS
   echo "Formatting partitions as NTFS..."
-  mkfs.ntfs -f -Q /dev/sdb1  # Quick format for installation media
-  mkfs.ntfs -f -Q /dev/sdb2  # Quick format for Windows installation target
-
-  # Wait for partition table to update
-  sleep 2
-  partprobe /dev/sdb
-  sleep 2
+  mkfs.ntfs -f -Q /dev/sdb1 || fail_halt "mkfs.ntfs sdb1 failed"  # installation media
+  mkfs.ntfs -f -Q /dev/sdb2 || fail_halt "mkfs.ntfs sdb2 failed"  # Windows install target
+  udevadm settle 2>/dev/null; sleep 1
 
   # Use WoeUSB in partition mode to copy installation media to partition 1 only
   # This leaves partition 2 empty for Windows installation
-  echo "Copying Windows installation media to /dev/sdb1 with WoeUSB..."
-  ./woeusb.sh --partition windows_virtio.iso /dev/sdb1
+  echo "Copying Windows installation media to /dev/sdb1 with WoeUSB (logging to /root/woeusb.log)..."
+  /woeusb.sh --partition /windows_virtio.iso /dev/sdb1 > /root/woeusb.log 2>&1
+  WOE_RC=$?
+  echo "woeusb exit code: $WOE_RC" | tee -a /root/woeusb.log
+  [ "$WOE_RC" -eq 0 ] || fail_halt "woeusb exited non-zero ($WOE_RC)"
+
+  # Validate the MBR bootstrap was actually written. WoeUSB installs grub to the parent disk (/dev/sdb);
+  # parted mklabel + mkfs.ntfs alone do NOT write bootable MBR code. An empty MBR reproduces the exact
+  # "Booting from Hard Disk..." SeaBIOS hang even when the files on the partition are correct.
+  if ! dd if=/dev/sdb bs=446 count=1 2>/dev/null | tr -d '\0' | grep -q . ; then
+    fail_halt "sdb MBR bootstrap empty - no bootloader (would hang at 'Booting from Hard Disk')"
+  fi
+  echo "MBR bootstrap present (non-empty)."
+
+  # --- Validate the media partition actually received the Windows files (the empty-media bug) ---
+  mount /dev/sdb1 /mnt
+  if [ ! -f /mnt/bootmgr ] || ! ls /mnt/sources/install.* >/dev/null 2>&1; then
+    echo "media partition contents after woeusb:"; ls -la /mnt 2>&1; df -h /mnt 2>&1
+    umount /mnt
+    fail_halt "media partition missing bootmgr or sources/install.* after woeusb"
+  fi
+  echo "Media partition validated: bootmgr + sources/install.* present."
 
   # Copy autounattend.xml to the installation media partition
   echo "Copying autounattend.xml to installation media..."
-  mount /dev/sdb1 /mnt
   cp /root/autounattend.xml /mnt/
   umount /mnt
 
