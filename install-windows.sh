@@ -828,6 +828,13 @@ cat > /root/autounattend.xml<<EOF
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
             </UserAccounts>
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <CommandLine>netsh advfirewall firewall set rule group="@FirewallAPI.dll,-28752" new enable=Yes</CommandLine>
+                    <Description>Enable Remote Desktop firewall group (locale-independent)</Description>
+                </SynchronousCommand>
+            </FirstLogonCommands>
         </component>
     </settings>
     <cpi:offlineImage cpi:source="wim:c:/wims/install.wim#Windows Server 2022 SERVERDATACENTER" xmlns:cpi="urn:schemas-microsoft-com:cpi" />
@@ -942,6 +949,13 @@ cat > /root/autounattend.xml<<EOF
                 <SkipUserOOBE>true</SkipUserOOBE>
                 <SkipMachineOOBE>true</SkipMachineOOBE>
             </OOBE>
+            <FirstLogonCommands>
+                <SynchronousCommand wcm:action="add">
+                    <Order>1</Order>
+                    <CommandLine>netsh advfirewall firewall set rule group="@FirewallAPI.dll,-28752" new enable=Yes</CommandLine>
+                    <Description>Enable Remote Desktop firewall group (locale-independent)</Description>
+                </SynchronousCommand>
+            </FirstLogonCommands>
         </component>
     </settings>
     <settings pass="specialize">
