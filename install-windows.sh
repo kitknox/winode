@@ -889,21 +889,16 @@ cat > /root/autounattend.xml<<EOF
             <UserData>
                 <AcceptEula>true</AcceptEula>
                 <ProductKey>
-                    <Key></Key>
+                    <Key>VK7JG-NPHTM-C97JM-9MPGT-3V66T</Key>
                 </ProductKey>
             </UserData>
             <ImageInstall>
                 <OSImage>
-                    <InstallFrom>
-                        <MetaData wcm:action="add">
-                            <Key>/IMAGE/NAME</Key>
-                            <Value>Windows 10 Pro</Value>
-                        </MetaData>
-                    </InstallFrom>
                     <InstallTo>
                         <DiskID>0</DiskID>
                         <PartitionID>2</PartitionID>
                     </InstallTo>
+                    <WillShowUI>OnError</WillShowUI>
                 </OSImage>
             </ImageInstall>
         </component>
